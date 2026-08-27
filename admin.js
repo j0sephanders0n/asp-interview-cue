@@ -1,6 +1,13 @@
-(() => {
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import {
+  getDatabase, ref, onValue, set, update, get
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
+import { firebaseConfig } from "./firebase-config.js";
+
 const PRESETS = [15, 30, 45, 60, 90];
-const cfg = window.INTERVIEW_CUE_CHANNEL;
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
 const statusDot = document.querySelector("#statusDot");
 const statusText = document.querySelector("#statusText");
@@ -28,14 +35,11 @@ let currentLive = null;
 let selectedQueueId = null;
 let newQuestionSeconds = 60;
 let autoAdvanceLock = false;
-let client = null;
-let connected = false;
 
 const STORAGE = {
-  questions: "interviewCue.questions.v5",
-  queue: "interviewCue.queue.v5",
-  live: "interviewCue.live.v5",
-  autoPlay: "interviewCue.autoPlay.v5"
+  questions: "interviewCue.questions.firebase",
+  queue: "interviewCue.queue.firebase",
+  autoPlay: "interviewCue.autoPlay.firebase"
 };
 
 function uid(prefix="id") {
@@ -75,12 +79,6 @@ function toast(message) {
   el._timer = setTimeout(() => el.classList.remove("show"), 1700);
 }
 
-function setConnection(isConnected) {
-  connected = isConnected;
-  statusDot.classList.toggle("connected", isConnected);
-  statusText.textContent = isConnected ? "Cross-device live" : "Connecting…";
-}
-
 function normalizeQuestion(item) {
   return {
     id: item.id || uid("q"),
@@ -93,6 +91,7 @@ function normalizeQuestion(item) {
 function renderQuestions() {
   const q = searchInput.value.trim().toLowerCase();
   const filtered = questions.filter(item => !q || item.text.toLowerCase().includes(q));
+
   questionCount.textContent = questions.length;
   questionList.innerHTML = "";
 
@@ -234,6 +233,7 @@ function addToQueue(question) {
     text: question.text,
     seconds: question.seconds
   };
+
   queue.push(item);
   selectedQueueId = item.id;
   writeLocal(STORAGE.queue, queue);
@@ -255,30 +255,21 @@ function removeQueueItem(id) {
   renderQueue();
 }
 
-function publishLive(payload) {
+async function publishLive(payload) {
   currentLive = payload;
-  writeLocal(STORAGE.live, currentLive);
   renderLive();
 
-  if (!client || !connected) {
-    toast("Not connected yet");
-    return;
+  try {
+    await set(ref(db, "live"), payload);
+  } catch (err) {
+    console.error("Firebase write failed:", err);
+    toast("Realtime send failed");
   }
-
-  client.publish(cfg.liveTopic, JSON.stringify(payload), {
-    qos: 1,
-    retain: true
-  }, err => {
-    if (err) {
-      console.error(err);
-      toast("Send failed");
-    }
-  });
 }
 
-function deployQuestion(item, queueId=null) {
+async function deployQuestion(item, queueId=null) {
   const now = Date.now();
-  publishLive({
+  await publishLive({
     active: true,
     question: item.text,
     seconds: item.seconds,
@@ -292,26 +283,28 @@ function deployQuestion(item, queueId=null) {
   });
 }
 
-function deployQueueItem(item) {
+async function deployQueueItem(item) {
   selectedQueueId = item.id;
   renderQueue();
-  deployQuestion(item, item.id);
-  toast("Deployed");
+  await deployQuestion(item, item.id);
+  toast("Deployed live");
 }
 
-function deployNextInQueue() {
+async function deployNextInQueue() {
   if (!queue.length) {
     toast("Queue is empty");
     return;
   }
 
   let idx = -1;
-  if (currentLive?.queueId) idx = queue.findIndex(q => q.id === currentLive.queueId);
+  if (currentLive?.queueId) {
+    idx = queue.findIndex(q => q.id === currentLive.queueId);
+  }
 
   const next = queue[idx + 1] || (idx === -1 ? queue[0] : null);
 
   if (!next) {
-    publishLive({
+    await publishLive({
       active:false,
       question:"",
       paused:false,
@@ -324,7 +317,7 @@ function deployNextInQueue() {
     return;
   }
 
-  deployQueueItem(next);
+  await deployQueueItem(next);
 }
 
 function renderLive() {
@@ -335,6 +328,7 @@ function renderLive() {
   }
 
   liveQuestion.textContent = currentLive.question || "—";
+
   const remainingMs = currentLive.paused
     ? (currentLive.remainingMs ?? 0)
     : (currentLive.endsAt ?? Date.now()) - Date.now();
@@ -342,7 +336,7 @@ function renderLive() {
   liveTimer.textContent = fmt(Math.max(0, remainingMs / 1000));
 }
 
-function maybeAutoAdvance() {
+async function maybeAutoAdvance() {
   if (!autoPlayToggle.checked || autoAdvanceLock) return;
   if (!currentLive?.active || currentLive.paused || !currentLive.queueId) return;
 
@@ -350,65 +344,34 @@ function maybeAutoAdvance() {
   if (remaining > 0) return;
 
   autoAdvanceLock = true;
-  try { deployNextInQueue(); }
-  finally { setTimeout(() => { autoAdvanceLock = false; }, 800); }
+  try {
+    await deployNextInQueue();
+  } finally {
+    setTimeout(() => { autoAdvanceLock = false; }, 700);
+  }
 }
 
-function connectRealtime() {
-  if (!window.mqtt) {
-    statusText.textContent = "MQTT library failed to load";
-    console.error("MQTT.js is missing. Check the CDN request in DevTools > Network.");
-    return;
-  }
-  if (!cfg) {
-    statusText.textContent = "Channel config missing";
-    console.error("window.INTERVIEW_CUE_CHANNEL is missing.");
-    return;
-  }
-
-  const clientId = "asp-admin-" + Math.random().toString(16).slice(2,10);
-  client = mqtt.connect(cfg.broker, {
-    clientId,
-    clean: true,
-    reconnectPeriod: 1500,
-    connectTimeout: 10000,
-    keepalive: 30
-  });
-
-  client.on("connect", () => {
-    setConnection(true);
-    client.subscribe(cfg.liveTopic, { qos: 1 });
-  });
-
-  client.on("reconnect", () => setConnection(false));
-  client.on("offline", () => setConnection(false));
-  client.on("close", () => setConnection(false));
-  client.on("error", err => {
-    console.error("MQTT error", err);
-    setConnection(false);
-    statusText.textContent = "Connection error";
-  });
-
-  client.on("message", (topic, message) => {
-    if (topic !== cfg.liveTopic) return;
-    try {
-      currentLive = JSON.parse(message.toString());
-      writeLocal(STORAGE.live, currentLive);
-      renderLive();
-    } catch {}
-  });
-}
-
-// load admin-only content locally
+/* Local prep state */
 questions = readLocal(STORAGE.questions, []).map(normalizeQuestion).filter(q => q.text);
 queue = readLocal(STORAGE.queue, []);
-currentLive = readLocal(STORAGE.live, null);
 autoPlayToggle.checked = readLocal(STORAGE.autoPlay, false);
 
 renderQuestions();
 renderQueue();
 renderLive();
-setConnection(false);
+
+/* Firebase realtime status */
+onValue(ref(db, ".info/connected"), snap => {
+  const connected = snap.val() === true;
+  statusDot.classList.toggle("connected", connected);
+  statusText.textContent = connected ? "Firebase live" : "Connecting…";
+});
+
+/* Keep admin in sync with current live cue */
+onValue(ref(db, "live"), snap => {
+  currentLive = snap.val();
+  renderLive();
+});
 
 document.querySelectorAll("[data-new-seconds]").forEach(btn => {
   btn.addEventListener("click", () => {
@@ -447,21 +410,21 @@ autoPlayToggle.addEventListener("change", () => {
   writeLocal(STORAGE.autoPlay, autoPlayToggle.checked);
 });
 
-startQueueBtn.addEventListener("click", () => {
+startQueueBtn.addEventListener("click", async () => {
   if (!queue.length) {
     toast("Queue is empty");
     return;
   }
-  deployQueueItem(queue[0]);
+  await deployQueueItem(queue[0]);
 });
 
-deploySelectedBtn.addEventListener("click", () => {
+deploySelectedBtn.addEventListener("click", async () => {
   const item = queue.find(q => q.id === selectedQueueId);
   if (!item) {
     toast("Select a queue item");
     return;
   }
-  deployQueueItem(item);
+  await deployQueueItem(item);
 });
 
 clearQueueBtn.addEventListener("click", () => {
@@ -474,8 +437,8 @@ clearQueueBtn.addEventListener("click", () => {
 
 nextBtn.addEventListener("click", deployNextInQueue);
 
-clearBtn.addEventListener("click", () => {
-  publishLive({
+clearBtn.addEventListener("click", async () => {
+  await publishLive({
     active:false,
     question:"",
     paused:false,
@@ -488,9 +451,10 @@ clearBtn.addEventListener("click", () => {
   });
 });
 
-pauseBtn.addEventListener("click", () => {
+pauseBtn.addEventListener("click", async () => {
   if (!currentLive?.active || currentLive.paused) return;
-  publishLive({
+
+  await publishLive({
     ...currentLive,
     paused:true,
     remainingMs:Math.max(0, (currentLive.endsAt ?? Date.now()) - Date.now()),
@@ -499,11 +463,13 @@ pauseBtn.addEventListener("click", () => {
   });
 });
 
-resumeBtn.addEventListener("click", () => {
+resumeBtn.addEventListener("click", async () => {
   if (!currentLive?.active || !currentLive.paused) return;
+
   const remainingMs = Math.max(0, currentLive.remainingMs ?? 0);
   const now = Date.now();
-  publishLive({
+
+  await publishLive({
     ...currentLive,
     paused:false,
     startedAt:now,
@@ -517,6 +483,3 @@ setInterval(() => {
   renderLive();
   maybeAutoAdvance();
 }, 200);
-
-connectRealtime();
-})();

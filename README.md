@@ -1,15 +1,16 @@
-# Interview Cue — FIXED Cross-Device Build
+# Interview Cue — FINAL Firebase Build
 
-This is the corrected GitHub Pages build.
+This version uses Firebase Realtime Database for cross-device control.
 
-## What was fixed
+## Already configured
 
-- `index.html` is correctly named.
-- `styles.css` is correctly named.
-- MQTT.js now loads from a valid CDN version:
-  `https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.14.0/mqtt.min.js`
-- Both pages use the same existing `channel-config.js`.
-- Better connection errors are shown on-screen.
+Firebase project:
+`asp-interview-cue`
+
+Realtime Database:
+`https://asp-interview-cue-default-rtdb.firebaseio.com/`
+
+You do not need MQTT and you do not need npm.
 
 ## GitHub URLs
 
@@ -19,70 +20,62 @@ Guest:
 Admin:
 `https://j0sephanders0n.github.io/asp-interview-cue/admin.html`
 
-## What you should see
+## Expected status
 
-Admin top-right:
-`Cross-device live`
+Admin:
+`Firebase live`
 
-Guest top-left:
+Guest:
 `Live`
 
-Only press Deploy once BOTH say they are connected.
+Once both statuses appear, Deploy on the admin page updates the guest page on any other internet-connected computer.
 
-## Replace your current project
+## IMPORTANT: database rules
 
-Delete the CONTENTS of:
+In Firebase:
+
+Databases & Storage > Realtime Database > Rules
+
+Use:
+
+```json
+{
+  "rules": {
+    ".read": true,
+    ".write": true
+  }
+}
+```
+
+Then click Publish.
+
+This is intentionally open because this project has no admin authentication.
+
+## Replace your GitHub project
+
+Copy every file from this ZIP into:
 
 `C:\Repos\AmericanSchoolOfParis\Pod`
 
-but KEEP the hidden `.git` folder if it exists.
+Keep the hidden `.git` folder.
 
-Then copy all files from this ZIP into that folder.
-
-The root should contain exactly these important files:
-
-- index.html
-- admin.html
-- styles.css
-- admin.js
-- guest.js
-- channel-config.js
-
-Then run:
+Then:
 
 ```powershell
 cd "C:\Repos\AmericanSchoolOfParis\Pod"
 git add -A
-git commit -m "Fix cross-device realtime connection"
+git commit -m "Switch realtime controls to Firebase"
 git push
 ```
 
-Wait about 1 minute for GitHub Pages to rebuild.
+Wait about one minute for GitHub Pages to redeploy.
 
-## Quick test
+## Test
 
-Open the guest URL on a phone using cellular data and the admin URL on your computer.
-
-If both say Live, add a question and press its upward-arrow Deploy button.
-
-The guest screen should change immediately.
-
-## If it still says Connecting
-
-Open Chrome DevTools > Console.
-
-The page now distinguishes between:
-
-- `MQTT library failed to load`
-- `Channel config missing`
-- `Connection error`
-
-That will tell us exactly which network step is being blocked.
-
-## Realtime transport
-
-This uses the EMQX public MQTT broker over secure WebSockets:
-
-`wss://broker.emqx.io:8084/mqtt`
-
-Only the currently deployed cue is transmitted. The question bank and queue remain in localStorage on the admin browser.
+1. Open admin.html on Computer A.
+2. Open index page on Computer B.
+3. Confirm admin says Firebase live.
+4. Confirm guest says Live.
+5. Add a question.
+6. Press its deploy arrow.
+7. Guest screen should update immediately.
