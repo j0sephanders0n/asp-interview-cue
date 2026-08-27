@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Interview Cue — Control</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body class="admin-page">
+  <main class="admin-shell">
+    <header class="admin-header">
+      <div>
+        <p class="eyebrow">INTERVIEW CUE</p>
+        <h1>Control</h1>
+      </div>
+      <div class="connection-pill">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">Connecting…</span>
+      </div>
+    </header>
+
+    <section class="glass-card live-card">
+      <div class="live-copy">
+        <p class="section-label">LIVE NOW</p>
+        <h2 id="liveQuestion">Nothing deployed yet.</h2>
+      </div>
+      <div class="live-right">
+        <div class="mini-timer" id="liveTimer">00:00</div>
+        <div class="row-actions">
+          <button id="pauseBtn" class="glass-button small" type="button">Pause</button>
+          <button id="resumeBtn" class="glass-button small" type="button">Resume</button>
+          <button id="nextBtn" class="glass-button small" type="button">Next</button>
+          <button id="clearBtn" class="glass-button small danger" type="button">Clear</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="playlist-grid">
+      <section class="glass-card bank-card">
+        <div class="card-title-row">
+          <div>
+            <p class="section-label">QUESTION BANK</p>
+            <h2>All questions</h2>
+          </div>
+          <div class="count-pill" id="questionCount">0</div>
+        </div>
+
+        <form id="addQuestionForm" class="composer">
+          <textarea id="newQuestionInput" class="glass-input" rows="3" placeholder="Write a new question…" required></textarea>
+          <div class="composer-footer">
+            <div class="timer-presets" id="newQuestionTimerPresets">
+              <button class="glass-chip" data-new-seconds="15" type="button">15 sec</button>
+              <button class="glass-chip" data-new-seconds="30" type="button">30 sec</button>
+              <button class="glass-chip" data-new-seconds="45" type="button">45 sec</button>
+              <button class="glass-chip active" data-new-seconds="60" type="button">1 min</button>
+              <button class="glass-chip" data-new-seconds="90" type="button">1:30</button>
+            </div>
+            <button class="glass-button add-btn" type="submit">Add Question</button>
+          </div>
+        </form>
+
+        <input id="searchInput" class="glass-input search-input" type="search" placeholder="Search questions…" />
+        <div id="questionList" class="question-list"></div>
+      </section>
+
+      <section class="glass-card queue-card">
+        <div class="card-title-row">
+          <div>
+            <p class="section-label">QUEUE</p>
+            <h2>Interview playlist</h2>
+          </div>
+          <div class="count-pill" id="queueCount">0</div>
+        </div>
+
+        <div class="queue-controls">
+          <label class="switch-row">
+            <input id="autoPlayToggle" type="checkbox" />
+            <span class="switch"></span>
+            <span>
+              <strong>Auto Play</strong>
+              <small>Deploy the next question when time ends.</small>
+            </span>
+          </label>
+          <button id="startQueueBtn" class="launch-button compact" type="button">
+            <span>Start Queue</span><span class="launch-icon">↑</span>
+          </button>
+        </div>
+
+        <div id="queueList" class="queue-list"></div>
+
+        <div class="queue-bottom">
+          <button id="clearQueueBtn" class="glass-button" type="button">Clear Queue</button>
+          <button id="deploySelectedBtn" class="glass-button" type="button">Deploy Selected</button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="https://unpkg.com/mqtt@5.14.1/dist/mqtt.min.js"></script>
+  <script src="./channel-config.js"></script>
+  <script src="./admin.js"></script>
+</body>
+</html>

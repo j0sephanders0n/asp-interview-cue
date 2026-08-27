@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Interview Cue</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body class="guest-page">
+  <main class="guest-shell">
+    <div class="guest-topbar">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText">Connecting…</span>
+    </div>
+
+    <section class="guest-stage" aria-live="polite">
+      <div class="timer-wrap">
+        <div class="timer" id="timer">00:00</div>
+        <div class="timer-label" id="timerLabel">WAITING</div>
+      </div>
+
+      <div class="question-wrap">
+        <p class="eyebrow" id="eyebrow">INTERVIEW</p>
+        <h1 id="question">Waiting for the next question.</h1>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://unpkg.com/mqtt@5.14.1/dist/mqtt.min.js"></script>
+  <script src="./channel-config.js"></script>
+  <script src="./guest.js"></script>
+</body>
+</html>

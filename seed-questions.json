@@ -1,0 +1,32 @@
+{
+  "questions": {
+    "q1": {
+      "text": "What\u2019s something people usually get completely wrong about your work?",
+      "seconds": 45,
+      "createdAt": 1
+    },
+    "q2": {
+      "text": "What\u2019s a tiny detail you\u2019ve spent way too much time thinking about?",
+      "seconds": 30,
+      "createdAt": 2
+    },
+    "q3": {
+      "text": "What would you change tomorrow if nobody could tell you no?",
+      "seconds": 60,
+      "createdAt": 3
+    },
+    "q4": {
+      "text": "What\u2019s the opinion you have that usually starts an argument?",
+      "seconds": 45,
+      "createdAt": 4
+    },
+    "q5": {
+      "text": "What are you obsessed with right now that has nothing to do with work?",
+      "seconds": 30,
+      "createdAt": 5
+    }
+  },
+  "queue": {
+    "autoPlay": false
+  }
+}
