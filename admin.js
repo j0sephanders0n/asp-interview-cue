@@ -355,8 +355,14 @@ function maybeAutoAdvance() {
 }
 
 function connectRealtime() {
-  if (!window.mqtt || !cfg) {
-    statusText.textContent = "Realtime unavailable";
+  if (!window.mqtt) {
+    statusText.textContent = "MQTT library failed to load";
+    console.error("MQTT.js is missing. Check the CDN request in DevTools > Network.");
+    return;
+  }
+  if (!cfg) {
+    statusText.textContent = "Channel config missing";
+    console.error("window.INTERVIEW_CUE_CHANNEL is missing.");
     return;
   }
 
@@ -380,6 +386,7 @@ function connectRealtime() {
   client.on("error", err => {
     console.error("MQTT error", err);
     setConnection(false);
+    statusText.textContent = "Connection error";
   });
 
   client.on("message", (topic, message) => {

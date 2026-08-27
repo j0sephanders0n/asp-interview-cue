@@ -1,77 +1,88 @@
-# Interview Cue — V5 Cross-Device
+# Interview Cue — FIXED Cross-Device Build
 
-This version is built specifically for:
+This is the corrected GitHub Pages build.
 
-- admin page on Computer A
-- guest/index page on Computer B
-- GitHub Pages hosting
-- no Firebase setup
+## What was fixed
 
-## URLs
+- `index.html` is correctly named.
+- `styles.css` is correctly named.
+- MQTT.js now loads from a valid CDN version:
+  `https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.14.0/mqtt.min.js`
+- Both pages use the same existing `channel-config.js`.
+- Better connection errors are shown on-screen.
+
+## GitHub URLs
 
 Guest:
-`https://YOUR-USERNAME.github.io/asp-interview-cue/`
+`https://j0sephanders0n.github.io/asp-interview-cue/`
 
 Admin:
-`https://YOUR-USERNAME.github.io/asp-interview-cue/admin.html`
+`https://j0sephanders0n.github.io/asp-interview-cue/admin.html`
 
-## Cross-device realtime
+## What you should see
 
-This build uses MQTT over secure WebSockets.
+Admin top-right:
+`Cross-device live`
 
-The channel for this exact build is:
+Guest top-left:
+`Live`
 
-`asp/interview-cue/6c9efad2396759169ea6e78a5a5ca5ea/live`
+Only press Deploy once BOTH say they are connected.
 
-Both HTML pages already use the same channel automatically.
+## Replace your current project
 
-You do NOT need to enter this room ID anywhere.
+Delete the CONTENTS of:
 
-When both pages say:
+`C:\Repos\AmericanSchoolOfParis\Pod`
 
-`Cross-device live` / `Live`
+but KEEP the hidden `.git` folder if it exists.
 
-they are connected.
+Then copy all files from this ZIP into that folder.
 
-## Test
+The root should contain exactly these important files:
 
-1. Upload/push this entire folder to GitHub.
-2. Wait for GitHub Pages to redeploy.
-3. Open `/admin.html` on your computer.
-4. Open `/` on a completely different computer or phone.
-5. Wait until the status indicator says Live.
-6. Add a question.
-7. Add it to the queue or deploy it directly.
-8. The other computer should update immediately.
+- index.html
+- admin.html
+- styles.css
+- admin.js
+- guest.js
+- channel-config.js
 
-## Questions and queue
+Then run:
 
-Your full Question Bank and Queue are intentionally stored in the ADMIN browser's localStorage.
+```powershell
+cd "C:\Repos\AmericanSchoolOfParis\Pod"
+git add -A
+git commit -m "Fix cross-device realtime connection"
+git push
+```
 
-That means your private preparation stays on your admin computer.
+Wait about 1 minute for GitHub Pages to rebuild.
 
-Only the currently deployed question/timer is sent through the realtime channel.
+## Quick test
 
-## Timer presets
+Open the guest URL on a phone using cellular data and the admin URL on your computer.
 
-- 15 seconds
-- 30 seconds
-- 45 seconds
-- 1 minute
-- 1:30
+If both say Live, add a question and press its upward-arrow Deploy button.
 
-## Auto Play
+The guest screen should change immediately.
 
-Turn on Auto Play and press Start Queue.
+## If it still says Connecting
 
-The admin page must remain open because it controls when the next queued question is deployed.
+Open Chrome DevTools > Console.
 
-## Important security note
+The page now distinguishes between:
 
-This version uses EMQX's free PUBLIC MQTT broker so it can work without accounts, Firebase, or a backend.
+- `MQTT library failed to load`
+- `Channel config missing`
+- `Connection error`
 
-The room/channel name is long and randomly generated, which makes accidental collisions very unlikely, but this is not authenticated private messaging.
+That will tell us exactly which network step is being blocked.
 
-Do not use it for sensitive/confidential information.
+## Realtime transport
 
-For a production/private version, swap the public broker for a private MQTT service or Firebase/Supabase authentication.
+This uses the EMQX public MQTT broker over secure WebSockets:
+
+`wss://broker.emqx.io:8084/mqtt`
+
+Only the currently deployed cue is transmitted. The question bank and queue remain in localStorage on the admin browser.
